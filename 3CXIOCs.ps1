@@ -11,7 +11,7 @@
  #--------------------------------------------------------------------------------------
 
 $filelist = @('ffmpeg.dll', 
-                'd3dcompiler.dll', 
+                'd3dcompiler.dll',
                 '3cxdesktopapp-18.12.407.msi', 
                 '3cxdesktopapp-18.12.416.msi', 
                 'icon13.ico')
@@ -22,23 +22,37 @@ $IOClist = @('aa124a4b4df12b34e74ee7f6c683b2ebec4ce9a8edcf9be345823b4fdcf5d868',
                 '11be1803e2e307b647a8a7e02d128335c448ff741bf06bf52b332e0bbf423b03', 
                 '4e08e4ffc699e0a1de4a5225a0b4920933fbb9cf123cde33e1674fde6d61444f',
                 'dde03348075512796241389dfea5560c20a3d2a2eac95c894e7bbed5e85a0acc',
-                'fad482ded2e25ce9e1dd3d3ecc3227af714bdfbbde04347dbc1b21d6a3670405')
+                'fad482ded2e25ce9e1dd3d3ecc3227af714bdfbbde04347dbc1b21d6a3670405',
+                'cad1120d91b812acafef7175f949dd1b09c6c21a',
+                'bf939c9c261d27ee7bb92325cc588624fca75429',
+                '20d554a80d759c50d6537dd7097fed84dd258b3e')
 
 foreach ($filename in $filelist) {
-Write-Host 'Get files '  $filename ':' -ForegroundColor Magenta
+Write-Host 'Get file '  $filename ':' -ForegroundColor Magenta
 Get-ChildItem $filename -Path C:\ -Recurse -ErrorAction SilentlyContinue | Select Fullname 
     | ForEach-Object {
         $filefullname = $_.FullName
-        Write-Host 'Checking hash for '  $filefullname ':'
-        $fileHash = (Get-FileHash $filefullname -Algorithm SHA256).Hash
-         if ($IOClist -contains $fileHash)
+        Write-Host 'Checking hash for '  $filefullname -NoNewline
+        $fileHash256 = (Get-FileHash $filefullname -Algorithm SHA256).Hash
+        $fileHash1 = (Get-FileHash $filefullname -Algorithm SHA1).Hash
+         if ($IOClist -contains $fileHash256 -or $IOClist -contains $fileHash1)
                 {
-                        Write-Host 'Compromised' -ForegroundColor Red
-                        Write-Host ' '
+                        $status = "Compromised"
+                        $found = $true
+                        $color = 'Red'
                     }
                     else {
-                        Write-Host 'Clean' -ForegroundColor Green
-                        Write-Host ' '
+                        $status = "Clean"
+                        $found = $false
+                        $color = 'Green'
                     }
-                }
+
+            $res = New-Object PSObject -Property @{
+                FileName = $filefullname 
+                Hash = @($fileHash256, $fileHash1)
+                Status = $status
+            }
+            Write-Host ': ' -NoNewline
+            Write-Host $res.Status -ForegroundColor $color
+        }
         }
